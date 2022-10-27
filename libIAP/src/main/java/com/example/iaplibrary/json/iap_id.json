@@ -1,0 +1,10 @@
+[
+  {
+    "id": "iapmonthly",
+    "type": "subs"
+  },
+  {
+    "id": "iapforever",
+    "type": "inapp"
+  }
+]
