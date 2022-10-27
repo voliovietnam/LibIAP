@@ -59,9 +59,9 @@ afterEvaluate {
             release(MavenPublication) {
                 from components.release
 
-                groupId = 'com.github.voliohiendx'
-                artifactId = 'libiapvolio'
-                version = '0.0.1'
+                groupId = 'com.github.voliovietnam'
+                artifactId = 'LibIAP'
+                version = '1.0.0'
             }
         }
     }
