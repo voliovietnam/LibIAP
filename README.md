@@ -1,3 +1,8 @@
+### implementation
+```xml
+implementation 'com.github.voliovietnam:LibIAP:1.0.1'
+```
+
 ### Init
 In MyApplication:
  ```xml
@@ -29,10 +34,6 @@ IapConnector.isPurchasesIap.observe(viewLifecycleOwner) {
        }
 ```
 
-### implementation
-```xml
-implementation 'com.github.voliovietnam:LibIAP:1.0.1'
-```
 ### Buy
  ```xml
 IapConnector.buyIap(activity,"iapforever")
