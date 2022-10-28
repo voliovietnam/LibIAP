@@ -23,6 +23,7 @@ object IapConnector {
 
     private var inApp: InApp? = null
     private var subs: Subs? = null
+    private var isDebug : Boolean? = null
 
     val isPurchasesIap = MutableLiveData<Boolean?>(null)
 //    val subscribeSuccess = MutableLiveData<ProductModel?>(null)
@@ -30,10 +31,10 @@ object IapConnector {
 
     private val subscribeInterface = mutableListOf<SubscribeInterface>()
 
-    fun initIap(application: Application, pathJson: String) {
+    fun initIap(application: Application, pathJson: String , isDebug : Boolean? = null) {
 
         this.pathJson = pathJson
-
+        this.isDebug = isDebug
         billingClient =
             BillingClient.newBuilder(application).setListener { billingResult, purchases ->
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && purchases != null) {
@@ -157,10 +158,17 @@ object IapConnector {
     }
 
     fun resetIap(activity: Activity) {
-        if (BuildConfig.DEBUG) {
-            Toast.makeText(activity, "Reset IAP", Toast.LENGTH_SHORT).show()
-            subs?.unSubscribeIap()
-            inApp?.unSubscribeIap()
+//        if (BuildConfig.DEBUG) {
+//            Toast.makeText(activity, "Reset IAP", Toast.LENGTH_SHORT).show()
+//            subs?.unSubscribeIap()
+//            inApp?.unSubscribeIap()
+//        }
+        isDebug?.let {
+            if (it){
+                Toast.makeText(activity, "Reset IAP", Toast.LENGTH_SHORT).show()
+                subs?.unSubscribeIap()
+                inApp?.unSubscribeIap()
+            }
         }
     }
 
