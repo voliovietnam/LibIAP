@@ -2,6 +2,7 @@ package com.example.iaplibrary
 
 import android.app.Activity
 import android.app.Application
+import android.util.Log
 import android.widget.Toast
 import androidx.lifecycle.MutableLiveData
 import com.android.billingclient.api.*
@@ -16,6 +17,7 @@ object IapConnector {
     private var billingClient: BillingClient? = null
 
     private val listProductModel = mutableListOf<ProductModel>()
+    private var productModelOlder: ProductModel? = null
     private val productDetailsList = mutableListOf<ProductDetails>()
     private val listID = mutableListOf<IapIdModel>()
 
@@ -23,7 +25,7 @@ object IapConnector {
 
     private var inApp: InApp? = null
     private var subs: Subs? = null
-    private var isDebug : Boolean? = null
+    private var isDebug: Boolean? = null
 
     val isPurchasesIap = MutableLiveData<Boolean?>(null)
 //    val subscribeSuccess = MutableLiveData<ProductModel?>(null)
@@ -31,7 +33,7 @@ object IapConnector {
 
     private val subscribeInterface = mutableListOf<SubscribeInterface>()
 
-    fun initIap(application: Application, pathJson: String , isDebug : Boolean? = null) {
+    fun initIap(application: Application, pathJson: String, isDebug: Boolean? = null) {
 
         this.pathJson = pathJson
         this.isDebug = isDebug
@@ -135,6 +137,44 @@ object IapConnector {
         }
     }
 
+    fun buyIapUpgrade(activity: Activity, productId: String, productIdOlder: String) {
+        productDetailsList.find { it.productId == productId }?.let { productDetails ->
+            val billingFlowParam = BillingFlowParams.ProductDetailsParams.newBuilder()
+                .setProductDetails(productDetails)
+
+            if (productDetails.productType == BillingClient.ProductType.SUBS) {
+                billingFlowParam.setOfferToken(
+                    productDetails.subscriptionOfferDetails?.get(0)?.offerToken ?: ""
+                )
+            }
+
+            val productDetailsParamsList =
+                listOf(billingFlowParam.build())
+
+            val billingFlowParams =
+                BillingFlowParams.newBuilder()
+                    .setProductDetailsParamsList(productDetailsParamsList)
+
+            var purchaseToken: String? = null
+
+            listProductModel.find { it.isPurchase && it.productId == productIdOlder }?.let {
+                productModelOlder = it
+                purchaseToken = it.purchaseToken
+            }
+
+            purchaseToken?.let {
+                billingFlowParams.setSubscriptionUpdateParams(
+                    BillingFlowParams.SubscriptionUpdateParams.newBuilder()
+                        .setOldPurchaseToken(it)
+                        .setReplaceProrationMode(BillingFlowParams.ProrationMode.IMMEDIATE_WITHOUT_PRORATION)
+                        .build()
+                )
+            }
+
+            billingClient?.launchBillingFlow(activity, billingFlowParams.build())
+        }
+    }
+
     private fun handlePurchase(purchase: Purchase, isSubscriptions: Boolean) {
         if (!purchase.isAcknowledged) {
             val acknowledgePurchaseParams =
@@ -164,7 +204,7 @@ object IapConnector {
 //            inApp?.unSubscribeIap()
 //        }
         isDebug?.let {
-            if (it){
+            if (it) {
                 Toast.makeText(activity, "Reset IAP", Toast.LENGTH_SHORT).show()
                 subs?.unSubscribeIap()
                 inApp?.unSubscribeIap()
@@ -173,12 +213,22 @@ object IapConnector {
     }
 
     private fun setDataCallBackSuccess(purchase: Purchase, isSubscriptions: Boolean) {
+        Log.d("HIHIHIHIHI", "setDataCallBackSuccess: ${purchase.originalJson}")
         jobCountTimeConnectIap?.cancel()
         isPurchasesIap.postValue(true)
 
+        productModelOlder?.let { pro ->
+            listProductModel.find { it.productId == pro.productId }?.let {
+                it.isPurchase = false
+                it.purchaseToken = ""
+            }
+            productModelOlder = null
+        }
+
         listProductModel.find { purchase.products.contains(it.productId) }?.let {
             it.isPurchase = true
-            it.purchaseTime = it.purchaseTime
+            it.purchaseTime = purchase.purchaseTime
+            it.purchaseToken = purchase.purchaseToken
             if (isSubscriptions) {
                 subscribeInterface.forEach { subscribe ->
                     subscribe.subscribeSuccess(it)

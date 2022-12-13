@@ -39,6 +39,11 @@ IapConnector.isPurchasesIap.observe(viewLifecycleOwner) {
 IapConnector.buyIap(activity,"iapforever")
 ```
 
+### BuyUpgrade
+ ```xml
+IapConnector.buyIapUpgrade(activity: Activity, productId: String, productIdOlder: String)
+```
+
 ### Reset Iap
  ```xml
 IapConnector.resetIap(activity)

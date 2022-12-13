@@ -10,7 +10,8 @@ data class ProductModel(
     val priceCurrencyCode: String,
     val formattedPrice: String,
     var purchaseTime: Long = 0L,
-    var isPurchase: Boolean
+    var isPurchase: Boolean,
+    var purchaseToken: String = "",
 ) {
     companion object {
         fun convertDataToProduct(listData: List<ProductDetails>): List<ProductModel> {
