@@ -10,7 +10,10 @@ data class IapIdModel(
     var idProduct: String = "null",
 
     @SerializedName("type")
-    var type: String = "null"
+    var type: String = "null",
+
+    @SerializedName("expiry")
+    var expiry: String = "null",
 
 ) {
     companion object {

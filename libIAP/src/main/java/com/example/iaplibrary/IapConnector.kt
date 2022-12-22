@@ -54,14 +54,9 @@ object IapConnector {
 
         listID.addAll(IapIdModel.getDataInput(application, pathJson))
 
-        jobCountTimeConnectIap = CoroutineScope(Dispatchers.IO).launch {
-            delay(3000)
-            isPurchasesIap.postValue(false)
-        }
-
-        inApp = InApp(billingClient, informationProduct = {
-            productDetailsList.addAll(it)
-            listProductModel.addAll(convertDataToProduct(it))
+        inApp = InApp(billingClient, informationProduct = { listData, listID ->
+            productDetailsList.addAll(listData)
+            listProductModel.addAll(convertDataToProduct(listData, listID))
         }, subscribeIap = {
             for (purchase in it) {
                 CoroutineScope(Dispatchers.IO).launch {
@@ -71,8 +66,9 @@ object IapConnector {
         })
 
         subs = Subs(billingClient, informationProduct = {
+            Log.d("NANSNNSNSSNSNSNSN", "initIap: $it")
             productDetailsList.addAll(it)
-            listProductModel.addAll(convertDataToProduct(it))
+            listProductModel.addAll(convertDataToProduct(it, listID))
         }, subscribeIap = {
             for (purchase in it) {
                 CoroutineScope(Dispatchers.IO).launch {
@@ -82,6 +78,12 @@ object IapConnector {
         })
 
         startConnection()
+
+        jobCountTimeConnectIap = CoroutineScope(Dispatchers.IO).launch {
+            delay(3000)
+            Log.d("HIHIHIHIHIHI", "CoroutineScope: ")
+            isPurchasesIap.postValue(false)
+        }
     }
 
     fun addIAPListener(listener: SubscribeInterface) {
@@ -125,12 +127,10 @@ object IapConnector {
                 )
             }
 
-            val productDetailsParamsList =
-                listOf(billingFlowParam.build())
+            val productDetailsParamsList = listOf(billingFlowParam.build())
 
             val billingFlowParams =
-                BillingFlowParams.newBuilder()
-                    .setProductDetailsParamsList(productDetailsParamsList)
+                BillingFlowParams.newBuilder().setProductDetailsParamsList(productDetailsParamsList)
                     .build()
 
             billingClient?.launchBillingFlow(activity, billingFlowParams)
@@ -148,12 +148,10 @@ object IapConnector {
                 )
             }
 
-            val productDetailsParamsList =
-                listOf(billingFlowParam.build())
+            val productDetailsParamsList = listOf(billingFlowParam.build())
 
             val billingFlowParams =
-                BillingFlowParams.newBuilder()
-                    .setProductDetailsParamsList(productDetailsParamsList)
+                BillingFlowParams.newBuilder().setProductDetailsParamsList(productDetailsParamsList)
 
             var purchaseToken: String? = null
 
@@ -164,8 +162,7 @@ object IapConnector {
 
             purchaseToken?.let {
                 billingFlowParams.setSubscriptionUpdateParams(
-                    BillingFlowParams.SubscriptionUpdateParams.newBuilder()
-                        .setOldPurchaseToken(it)
+                    BillingFlowParams.SubscriptionUpdateParams.newBuilder().setOldPurchaseToken(it)
                         .setReplaceProrationMode(BillingFlowParams.ProrationMode.IMMEDIATE_WITHOUT_PRORATION)
                         .build()
                 )
@@ -183,6 +180,7 @@ object IapConnector {
                 withContext(Dispatchers.IO) {
                     billingClient?.acknowledgePurchase(acknowledgePurchaseParams.build()) { p0 ->
                         if (p0.responseCode == BillingClient.BillingResponseCode.OK) {
+                            Log.d("HIHUIYIUUUU", "handlePurchase: ")
                             setDataCallBackSuccess(purchase, isSubscriptions)
                         } else {
                             subscribeInterface.forEach { subscribe ->
@@ -193,6 +191,7 @@ object IapConnector {
                 }
             }
         } else {
+            Log.d("HIHUIYIUUUU", "KOPKPOKPPP: ")
             setDataCallBackSuccess(purchase, isSubscriptions)
         }
     }
@@ -213,7 +212,7 @@ object IapConnector {
     }
 
     private fun setDataCallBackSuccess(purchase: Purchase, isSubscriptions: Boolean) {
-        Log.d("HIHIHIHIHI", "setDataCallBackSuccess: ${purchase.originalJson}")
+
         jobCountTimeConnectIap?.cancel()
         isPurchasesIap.postValue(true)
 

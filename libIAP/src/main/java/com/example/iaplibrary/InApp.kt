@@ -9,7 +9,7 @@ import kotlinx.coroutines.withContext
 
 class InApp constructor(
     private val billingClient: BillingClient?,
-    val informationProduct: (listData: List<ProductDetails>) -> Unit,
+    val informationProduct: (listData: List<ProductDetails>, listID: List<IapIdModel>) -> Unit,
     val subscribeIap: (listData: List<Purchase>) -> Unit
 ) : IapInterface {
 
@@ -21,8 +21,7 @@ class InApp constructor(
 
     override fun checkSubscribeIap() {
         billingClient?.queryPurchasesAsync(
-            QueryPurchasesParams.newBuilder()
-                .setProductType(BillingClient.ProductType.INAPP)
+            QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP)
                 .build()
         ) { billingResult, purchases ->
             if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && purchases.isNotEmpty()) {
@@ -46,23 +45,20 @@ class InApp constructor(
 
         val productDetailsResult = billingClient?.queryProductDetails(params.build())
         productDetailsResult?.productDetailsList?.let {
-            informationProduct(it)
+            informationProduct(it, listID)
         }
     }
 
     override fun unSubscribeIap() {
         billingClient?.queryPurchasesAsync(
-            QueryPurchasesParams.newBuilder()
-                .setProductType(BillingClient.ProductType.INAPP)
+            QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP)
                 .build()
         ) { billingResult, purchases ->
             if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && purchases.isNotEmpty()) {
                 purchases.forEach {
                     CoroutineScope(Dispatchers.IO).launch {
                         val consumeParams =
-                            ConsumeParams.newBuilder()
-                                .setPurchaseToken(it.purchaseToken)
-                                .build()
+                            ConsumeParams.newBuilder().setPurchaseToken(it.purchaseToken).build()
 
                         withContext(Dispatchers.IO) {
                             billingClient.consumeAsync(consumeParams) { billingResult, s ->

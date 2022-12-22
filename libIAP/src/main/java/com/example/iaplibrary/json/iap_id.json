@@ -1,10 +1,12 @@
 [
   {
     "id": "iapmonthly",
-    "type": "subs"
+    "type": "subs",
+    "expiry": "P1W"
   },
   {
     "id": "iapforever",
-    "type": "inapp"
+    "type": "inapp",
+    "expiry": "PFV"
   }
 ]
