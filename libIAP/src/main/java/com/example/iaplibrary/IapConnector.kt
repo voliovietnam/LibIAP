@@ -71,6 +71,7 @@ object IapConnector {
         })
 
         subs = Subs(billingClient, informationProduct = {
+            Log.d("dsk", "informationProduct: $it")
             productDetailsList.addAll(it)
             listProductModel.addAll(convertDataToProduct(it))
         }, subscribeIap = {
