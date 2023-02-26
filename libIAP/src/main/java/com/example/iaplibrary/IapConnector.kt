@@ -115,14 +115,32 @@ object IapConnector {
         })
     }
 
-    fun buyIap(activity: Activity, productId: String) {
+    fun buyIap(activity: Activity, productId: String, isSale: Boolean = false) {
         productDetailsList.find { it.productId == productId }?.let { productDetails ->
             val billingFlowParam = BillingFlowParams.ProductDetailsParams.newBuilder()
                 .setProductDetails(productDetails)
 
             if (productDetails.productType == BillingClient.ProductType.SUBS) {
+                var token = ""
+                if (isSale) {
+                    token = productDetails.subscriptionOfferDetails!![0].offerToken
+//                    if (productDetails.subscriptionOfferDetails!!.size == 1) {
+//                            token = productDetails.subscriptionOfferDetails!![0].offerToken
+//                    } else {
+//
+//                    }
+
+//                    productDetails.subscriptionOfferDetails
+                } else {
+                    if (productDetails.subscriptionOfferDetails!!.size == 1) {
+                        token = productDetails.subscriptionOfferDetails!![0].offerToken
+                    } else {
+                        token = productDetails.subscriptionOfferDetails!![1].offerToken
+                    }
+                }
+
                 billingFlowParam.setOfferToken(
-                    productDetails.subscriptionOfferDetails?.get(0)?.offerToken ?: ""
+                    token
                 )
             }
 
