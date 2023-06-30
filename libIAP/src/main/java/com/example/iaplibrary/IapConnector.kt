@@ -10,16 +10,17 @@ import com.example.iaplibrary.model.IapIdModel
 import com.example.iaplibrary.model.ProductModel
 import com.example.iaplibrary.model.ProductModel.Companion.convertDataToProduct
 import kotlinx.coroutines.*
+import java.util.concurrent.CopyOnWriteArrayList
 
 object IapConnector {
     private var pathJson: String? = null
 
     private var billingClient: BillingClient? = null
 
-    private val listProductModel = mutableListOf<ProductModel>()
+    private val listProductModel = CopyOnWriteArrayList<ProductModel>()
     private var productModelOlder: ProductModel? = null
-    private val productDetailsList = mutableListOf<ProductDetails>()
-    private val listID = mutableListOf<IapIdModel>()
+    private val productDetailsList = CopyOnWriteArrayList<ProductDetails>()
+    private val listID = CopyOnWriteArrayList<IapIdModel>()
 
     private var jobCountTimeConnectIap: Job? = null
 
@@ -34,6 +35,7 @@ object IapConnector {
     private val subscribeInterface = mutableListOf<SubscribeInterface>()
 
     fun initIap(application: Application, pathJson: String, isDebug: Boolean? = null) {
+
 
         this.pathJson = pathJson
         this.isDebug = isDebug
