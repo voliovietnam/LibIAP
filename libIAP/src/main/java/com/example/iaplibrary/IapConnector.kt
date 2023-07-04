@@ -32,7 +32,7 @@ object IapConnector {
 //    val subscribeSuccess = MutableLiveData<ProductModel?>(null)
 //    val subscribeError = MutableLiveData<String?>(null)
 
-    private val subscribeInterface = mutableListOf<SubscribeInterface>()
+    private val subscribeInterface = CopyOnWriteArrayList<SubscribeInterface>()
 
     fun initIap(application: Application, pathJson: String, isDebug: Boolean? = null) {
 
@@ -48,7 +48,7 @@ object IapConnector {
                         }
                     }
                 } else {
-                    subscribeInterface.forEach { subscribe ->
+                    subscribeInterface.iterator().forEach { subscribe ->
                         subscribe.subscribeError(logEventFailed(billingResult.responseCode))
                     }
                 }
@@ -100,11 +100,19 @@ object IapConnector {
             override fun onBillingSetupFinished(billingResult: BillingResult) {
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                     CoroutineScope(Dispatchers.IO).launch {
-                        val inappsubs = listID.filter { it.type == "inapp" }
+                        val inappsubs = mutableListOf<IapIdModel>()
+                        listID.iterator().forEach {
+                            if (it.type == "inapp") inappsubs.add(it)
+                        }
+
                         if (inappsubs.isNotEmpty()) {
                             inApp?.getInformation(inappsubs)
                         }
-                        val subssubs = listID.filter { it.type == "subs" }
+                        val subssubs = mutableListOf<IapIdModel>()
+
+                        listID.iterator().forEach {
+                            if (it.type == "subs") subssubs.add(it)
+                        }
                         if (subssubs.isNotEmpty()) {
                             subs?.getInformation(listID.filter { it.type == "subs" })
                         }
@@ -118,63 +126,69 @@ object IapConnector {
     }
 
     fun buyIap(activity: Activity, productId: String) {
-        productDetailsList.find { it.productId == productId }?.let { productDetails ->
-            val billingFlowParam = BillingFlowParams.ProductDetailsParams.newBuilder()
-                .setProductDetails(productDetails)
+        productDetailsList.iterator().forEach { productDetails ->
+            if (productDetails.productId == productId) {
+                val billingFlowParam = BillingFlowParams.ProductDetailsParams.newBuilder()
+                    .setProductDetails(productDetails)
 
-            if (productDetails.productType == BillingClient.ProductType.SUBS) {
-                billingFlowParam.setOfferToken(
-                    productDetails.subscriptionOfferDetails?.get(0)?.offerToken ?: ""
-                )
+                if (productDetails.productType == BillingClient.ProductType.SUBS) {
+                    billingFlowParam.setOfferToken(
+                        productDetails.subscriptionOfferDetails?.get(0)?.offerToken ?: ""
+                    )
+                }
+
+                val productDetailsParamsList =
+                    listOf(billingFlowParam.build())
+
+                val billingFlowParams =
+                    BillingFlowParams.newBuilder()
+                        .setProductDetailsParamsList(productDetailsParamsList)
+                        .build()
+
+                billingClient?.launchBillingFlow(activity, billingFlowParams)
             }
-
-            val productDetailsParamsList =
-                listOf(billingFlowParam.build())
-
-            val billingFlowParams =
-                BillingFlowParams.newBuilder()
-                    .setProductDetailsParamsList(productDetailsParamsList)
-                    .build()
-
-            billingClient?.launchBillingFlow(activity, billingFlowParams)
         }
     }
 
     fun buyIapUpgrade(activity: Activity, productId: String, productIdOlder: String) {
-        productDetailsList.find { it.productId == productId }?.let { productDetails ->
-            val billingFlowParam = BillingFlowParams.ProductDetailsParams.newBuilder()
-                .setProductDetails(productDetails)
+        productDetailsList.iterator().forEach { productDetails ->
+            if (productDetails.productId == productId) {
+                val billingFlowParam = BillingFlowParams.ProductDetailsParams.newBuilder()
+                    .setProductDetails(productDetails)
 
-            if (productDetails.productType == BillingClient.ProductType.SUBS) {
-                billingFlowParam.setOfferToken(
-                    productDetails.subscriptionOfferDetails?.get(0)?.offerToken ?: ""
-                )
+                if (productDetails.productType == BillingClient.ProductType.SUBS) {
+                    billingFlowParam.setOfferToken(
+                        productDetails.subscriptionOfferDetails?.get(0)?.offerToken ?: ""
+                    )
+                }
+
+                val productDetailsParamsList =
+                    listOf(billingFlowParam.build())
+
+                val billingFlowParams =
+                    BillingFlowParams.newBuilder()
+                        .setProductDetailsParamsList(productDetailsParamsList)
+
+                var purchaseToken: String? = null
+
+                listProductModel.iterator().forEach {
+                    if (it.isPurchase && it.productId == productIdOlder) {
+                        productModelOlder = it
+                        purchaseToken = it.purchaseToken
+                    }
+                }
+
+                purchaseToken?.let {
+                    billingFlowParams.setSubscriptionUpdateParams(
+                        BillingFlowParams.SubscriptionUpdateParams.newBuilder()
+                            .setOldPurchaseToken(it)
+                            .setReplaceProrationMode(BillingFlowParams.ProrationMode.IMMEDIATE_WITHOUT_PRORATION)
+                            .build()
+                    )
+                }
+
+                billingClient?.launchBillingFlow(activity, billingFlowParams.build())
             }
-
-            val productDetailsParamsList =
-                listOf(billingFlowParam.build())
-
-            val billingFlowParams =
-                BillingFlowParams.newBuilder()
-                    .setProductDetailsParamsList(productDetailsParamsList)
-
-            var purchaseToken: String? = null
-
-            listProductModel.find { it.isPurchase && it.productId == productIdOlder }?.let {
-                productModelOlder = it
-                purchaseToken = it.purchaseToken
-            }
-
-            purchaseToken?.let {
-                billingFlowParams.setSubscriptionUpdateParams(
-                    BillingFlowParams.SubscriptionUpdateParams.newBuilder()
-                        .setOldPurchaseToken(it)
-                        .setReplaceProrationMode(BillingFlowParams.ProrationMode.IMMEDIATE_WITHOUT_PRORATION)
-                        .build()
-                )
-            }
-
-            billingClient?.launchBillingFlow(activity, billingFlowParams.build())
         }
     }
 
@@ -188,7 +202,7 @@ object IapConnector {
                         if (p0.responseCode == BillingClient.BillingResponseCode.OK) {
                             setDataCallBackSuccess(purchase, isSubscriptions)
                         } else {
-                            subscribeInterface.forEach { subscribe ->
+                            subscribeInterface.iterator().forEach { subscribe ->
                                 subscribe.subscribeError(logEventFailed(p0.responseCode))
                             }
                         }
@@ -221,20 +235,24 @@ object IapConnector {
         isPurchasesIap.postValue(true)
 
         productModelOlder?.let { pro ->
-            listProductModel.find { it.productId == pro.productId }?.let {
-                it.isPurchase = false
-                it.purchaseToken = ""
+            listProductModel.iterator().forEach {
+                if (it.productId == pro.productId) {
+                    it.isPurchase = false
+                    it.purchaseToken = ""
+                }
             }
             productModelOlder = null
         }
 
-        listProductModel.find { purchase.products.contains(it.productId) }?.let {
-            it.isPurchase = true
-            it.purchaseTime = purchase.purchaseTime
-            it.purchaseToken = purchase.purchaseToken
-            if (isSubscriptions) {
-                subscribeInterface.forEach { subscribe ->
-                    subscribe.subscribeSuccess(it)
+        listProductModel.iterator().forEach {
+            if (purchase.products.contains(it.productId)) {
+                it.isPurchase = true
+                it.purchaseTime = purchase.purchaseTime
+                it.purchaseToken = purchase.purchaseToken
+                if (isSubscriptions) {
+                    subscribeInterface.iterator().forEach { subscribe ->
+                        subscribe.subscribeSuccess(it)
+                    }
                 }
             }
         }
