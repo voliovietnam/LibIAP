@@ -30,24 +30,12 @@ data class ProductModel(
                     type = it.productType,
                     title = it.title,
                     description = it.description,
-                    priceCurrencyCode = if (it.productType == "subs") it.subscriptionOfferDetails?.get(
-                        0
-                    )?.pricingPhases?.pricingPhaseList?.get(
-                        0
-                    )?.priceCurrencyCode
-                        ?: "" else it.oneTimePurchaseOfferDetails?.priceCurrencyCode ?: "",
+                    priceCurrencyCode = it.oneTimePurchaseOfferDetails?.priceCurrencyCode ?: "",
 
-
-                    formattedPrice = if (it.productType == "subs") it.subscriptionOfferDetails?.get(
-                        0
-                    )?.pricingPhases?.pricingPhaseList?.get(
-                        0
-                    )?.formattedPrice ?: "" else it.oneTimePurchaseOfferDetails?.formattedPrice
+                    formattedPrice = it.oneTimePurchaseOfferDetails?.formattedPrice
                         ?: "",
 
-
                     isPurchase = false,
-
 
                     formattedPriceSecond = list?.let {
                         if (it.size > 1) {
@@ -58,14 +46,14 @@ data class ProductModel(
                     } ?: kotlin.run {
                         ""
                     },
-                    subsDetails = getSubsDetails(it)
+                    subsDetails = getSubDetail(it)
                 )
                 listProduct.add(data)
             }
             return listProduct
         }
 
-        fun getSubsDetails(productDetails: ProductDetails): SubsDetails {
+        private fun getSubDetail(productDetails: ProductDetails): SubsDetails {
 
             val subsDetails = SubsDetails()
 
@@ -84,7 +72,7 @@ data class ProductModel(
             //get TrialOffer
             productDetails.subscriptionOfferDetails?.forEach { offer ->
                 offer?.pricingPhases?.pricingPhaseList?.forEach {
-                    val isTrial = it.priceAmountMicros == 0L && it.recurrenceMode == 2
+                    val isTrial = it.priceAmountMicros == 0L
                     if (isTrial) {
                         offerTrial = offer
                     }
@@ -96,8 +84,8 @@ data class ProductModel(
                 val pricingPhaseList = offer?.pricingPhases?.pricingPhaseList ?: return@forEach
 
                 if ((pricingPhaseList.size) >= 2) {
-                    val firstPrice = pricingPhaseList.first().priceAmountMicros
-                    val lastPrice = pricingPhaseList.last().priceAmountMicros
+                    val firstPrice = pricingPhaseList.minOf { it.priceAmountMicros }
+                    val lastPrice = pricingPhaseList.maxOf { it.priceAmountMicros }
 
                     Log.e("DucLH---offer", "firstPrice" + firstPrice)
                     Log.e("DucLH---offer", "lastPrice" + lastPrice)

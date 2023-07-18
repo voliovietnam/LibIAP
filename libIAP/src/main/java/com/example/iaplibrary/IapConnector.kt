@@ -57,7 +57,7 @@ object IapConnector {
         listID.addAll(IapIdModel.getDataInput(application, pathJson))
 
         jobCountTimeConnectIap = CoroutineScope(Dispatchers.IO).launch {
-            delay(3000)
+            delay(3_000)
             isPurchasesIap.postValue(false)
         }
 
