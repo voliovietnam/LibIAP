@@ -74,6 +74,11 @@ object IapConnector {
 
         subs = Subs(billingClient, informationProduct = {
             Log.d("dsk", "informationProduct: $it")
+            it.forEach {
+                Log.e("DucLH---ProductDetails", it.toString())
+                Log.e("DucLH---PrDetailsToken", it.subscriptionOfferDetails?.size.toString())
+
+            }
             productDetailsList.addAll(it)
             listProductModel.addAll(convertDataToProduct(it))
         }, subscribeIap = {
@@ -125,16 +130,32 @@ object IapConnector {
         })
     }
 
-    fun buyIap(activity: Activity, productId: String) {
+    fun buyIap(activity: Activity, productId: String, isPrioritizeTrial: Boolean = true) {
         productDetailsList.iterator().forEach { productDetails ->
             if (productDetails.productId == productId) {
                 val billingFlowParam = BillingFlowParams.ProductDetailsParams.newBuilder()
                     .setProductDetails(productDetails)
 
                 if (productDetails.productType == BillingClient.ProductType.SUBS) {
-                    billingFlowParam.setOfferToken(
-                        productDetails.subscriptionOfferDetails?.get(0)?.offerToken ?: ""
-                    )
+
+                    val productModel = listProductModel.find {
+                        it.productId == productId
+                    }
+
+                    var token = productDetails.subscriptionOfferDetails?.get(0)?.offerToken ?: ""
+                    productModel?.let { model ->
+                        if (isPrioritizeTrial) {
+                            if (model.subsDetails.hasFreeTrialOffer && model.subsDetails.tokenTrialOffer.isNotBlank()) {
+                                token = model.subsDetails.tokenTrialOffer
+                            } else if (model.subsDetails.tokenSaleOffer.isNotBlank()) {
+                                token = model.subsDetails.tokenSaleOffer
+                            }
+                        } else if (model.subsDetails.tokenSaleOffer.isNotBlank()) {
+                            token = model.subsDetails.tokenSaleOffer
+                        }
+                    }
+
+                    billingFlowParam.setOfferToken(token)
                 }
 
                 val productDetailsParamsList =

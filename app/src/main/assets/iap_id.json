@@ -1,0 +1,22 @@
+[
+  {
+    "id": "one_week_trial",
+    "type": "subs"
+  },
+  {
+    "id": "one_month_trial",
+    "type": "subs"
+  },
+  {
+    "id": "test_weekly",
+    "type": "subs"
+  },
+  {
+    "id": "oncepay",
+    "type": "inapp"
+  },
+  {
+    "id": "oncepay_discount",
+    "type": "inapp"
+  }
+]
