@@ -45,8 +45,9 @@ class InApp constructor(
         params.setProductList(productList)
 
         val productDetailsResult = billingClient?.queryProductDetails(params.build())
-        productDetailsResult?.productDetailsList?.let {
-            informationProduct(it)
+
+        val productDetailsResultAsync = billingClient?.queryProductDetailsAsync(params.build()) { p0, p1 ->
+            informationProduct(p1)
         }
     }
 

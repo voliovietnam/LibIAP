@@ -1,8 +1,8 @@
 package com.example.iaplibrary
 
-import com.example.iaplibrary.model.ProductModel
+import com.example.iaplibrary.model.IapModel
 
 interface SubscribeInterface {
-    fun subscribeSuccess(productModel: ProductModel)
+    fun subscribeSuccess(productModel: IapModel)
     fun subscribeError(error: String)
 }

@@ -12,6 +12,8 @@ data class IapIdModel(
     @SerializedName("type")
     var type: String = "null"
 
+//offertag sale trail
+
 ) {
     companion object {
         fun getDataInput(context: Context, nameFile: String): List<IapIdModel> {

@@ -4,6 +4,10 @@
     "type": "subs"
   },
   {
+    "id": "test_weekly",
+    "type": "subs"
+  },
+  {
     "id": "iapforever",
     "type": "inapp"
   }

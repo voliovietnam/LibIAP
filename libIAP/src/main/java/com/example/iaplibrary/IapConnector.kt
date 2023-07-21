@@ -7,8 +7,8 @@ import android.widget.Toast
 import androidx.lifecycle.MutableLiveData
 import com.android.billingclient.api.*
 import com.example.iaplibrary.model.IapIdModel
-import com.example.iaplibrary.model.ProductModel
-import com.example.iaplibrary.model.ProductModel.Companion.convertDataToProduct
+import com.example.iaplibrary.model.IapModel
+import com.example.iaplibrary.model.IapModel.Companion.convertDataToProductPremium
 import kotlinx.coroutines.*
 import java.util.concurrent.CopyOnWriteArrayList
 
@@ -17,8 +17,8 @@ object IapConnector {
 
     private var billingClient: BillingClient? = null
 
-    private val listProductModel = CopyOnWriteArrayList<ProductModel>()
-    private var productModelOlder: ProductModel? = null
+    private val listProductModel = CopyOnWriteArrayList<IapModel>()
+    private var productModelOlder: IapModel? = null
     private val productDetailsList = CopyOnWriteArrayList<ProductDetails>()
     private val listID = CopyOnWriteArrayList<IapIdModel>()
 
@@ -28,24 +28,34 @@ object IapConnector {
     private var subs: Subs? = null
     private var isDebug: Boolean? = null
 
-    val isPurchasesIap = MutableLiveData<Boolean?>(null)
-//    val subscribeSuccess = MutableLiveData<ProductModel?>(null)
-//    val subscribeError = MutableLiveData<String?>(null)
+    val listPurchased = MutableLiveData<List<IapModel>?>(null)
 
     private val subscribeInterface = CopyOnWriteArrayList<SubscribeInterface>()
 
     fun initIap(application: Application, pathJson: String, isDebug: Boolean? = null) {
-
 
         this.pathJson = pathJson
         this.isDebug = isDebug
         billingClient =
             BillingClient.newBuilder(application).setListener { billingResult, purchases ->
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && purchases != null) {
-                    for (purchase in purchases) {
-                        CoroutineScope(Dispatchers.IO).launch {
-                            handlePurchase(purchase, true)
+                    CoroutineScope(Dispatchers.IO).launch {
+                        val promise = async {
+                            for (purchase in purchases) {
+                                val job = CoroutineScope(Dispatchers.IO).async {
+                                    handlePurchase(purchase, true)
+                                }
+                            }
                         }
+                        promise.await()
+                        val data= mutableListOf<IapModel>()
+                        listProductModel.iterator().forEach {
+                            if(it.isPurchase){
+                                data.add(it)
+                            }
+                        }
+                        listPurchased.postValue(data)
+                      //  val data= listProductModel.iterator().forEach {  }
                     }
                 } else {
                     subscribeInterface.iterator().forEach { subscribe ->
@@ -57,30 +67,56 @@ object IapConnector {
         listID.addAll(IapIdModel.getDataInput(application, pathJson))
 
         jobCountTimeConnectIap = CoroutineScope(Dispatchers.IO).launch {
-            delay(3000)
-            isPurchasesIap.postValue(false)
+            delay(3_000)
+            listPurchased.postValue(emptyList())
         }
 
         inApp = InApp(billingClient, informationProduct = {
             productDetailsList.addAll(it)
-            listProductModel.addAll(convertDataToProduct(it))
+            listProductModel.addAll(convertDataToProductPremium(it))
         }, subscribeIap = {
-            for (purchase in it) {
-                CoroutineScope(Dispatchers.IO).launch {
-                    handlePurchase(purchase, false)
+
+            CoroutineScope(Dispatchers.IO).launch {
+                val promise = async {
+                    for (purchase in it) {
+                        val job = CoroutineScope(Dispatchers.IO).async {
+                            handlePurchase(purchase, true)
+                        }
+                    }
                 }
+                promise.await()
+                val data = mutableListOf<IapModel>()
+                listProductModel.iterator().forEach {
+                    if (it.isPurchase) {
+                        data.add(it)
+                    }
+                }
+                listPurchased.postValue(data)
             }
+
         })
 
         subs = Subs(billingClient, informationProduct = {
-            Log.d("dsk", "informationProduct: $it")
             productDetailsList.addAll(it)
-            listProductModel.addAll(convertDataToProduct(it))
+            listProductModel.addAll(convertDataToProductPremium(it))
         }, subscribeIap = {
-            for (purchase in it) {
-                CoroutineScope(Dispatchers.IO).launch {
-                    handlePurchase(purchase, false)
+
+            CoroutineScope(Dispatchers.IO).launch {
+                val promise = async {
+                    for (purchase in it) {
+                        val job = CoroutineScope(Dispatchers.IO).async {
+                            handlePurchase(purchase, true)
+                        }
+                    }
                 }
+                promise.await()
+                val data = mutableListOf<IapModel>()
+                listProductModel.iterator().forEach {
+                    if (it.isPurchase) {
+                        data.add(it)
+                    }
+                }
+                listPurchased.postValue(data)
             }
         })
 
@@ -125,16 +161,18 @@ object IapConnector {
         })
     }
 
-    fun buyIap(activity: Activity, productId: String) {
+    fun buyIap(
+        activity: Activity,
+        productId: String,
+        idToken: String
+    ) {
         productDetailsList.iterator().forEach { productDetails ->
             if (productDetails.productId == productId) {
                 val billingFlowParam = BillingFlowParams.ProductDetailsParams.newBuilder()
                     .setProductDetails(productDetails)
 
                 if (productDetails.productType == BillingClient.ProductType.SUBS) {
-                    billingFlowParam.setOfferToken(
-                        productDetails.subscriptionOfferDetails?.get(0)?.offerToken ?: ""
-                    )
+                    billingFlowParam.setOfferToken(idToken)
                 }
 
                 val productDetailsParamsList =
@@ -150,7 +188,7 @@ object IapConnector {
         }
     }
 
-    fun buyIapUpgrade(activity: Activity, productId: String, productIdOlder: String) {
+    fun buyIapUpgrade(activity: Activity, productId: String, productIdOlder: String,   idToken: String) {
         productDetailsList.iterator().forEach { productDetails ->
             if (productDetails.productId == productId) {
                 val billingFlowParam = BillingFlowParams.ProductDetailsParams.newBuilder()
@@ -158,7 +196,7 @@ object IapConnector {
 
                 if (productDetails.productType == BillingClient.ProductType.SUBS) {
                     billingFlowParam.setOfferToken(
-                        productDetails.subscriptionOfferDetails?.get(0)?.offerToken ?: ""
+                        idToken
                     )
                 }
 
@@ -230,9 +268,8 @@ object IapConnector {
     }
 
     private fun setDataCallBackSuccess(purchase: Purchase, isSubscriptions: Boolean) {
-        Log.d("HIHIHIHIHI", "setDataCallBackSuccess: ${purchase.originalJson}")
         jobCountTimeConnectIap?.cancel()
-        isPurchasesIap.postValue(true)
+       // isPurchasesIap.postValue(true)
 
         productModelOlder?.let { pro ->
             listProductModel.iterator().forEach {
@@ -246,9 +283,11 @@ object IapConnector {
 
         listProductModel.iterator().forEach {
             if (purchase.products.contains(it.productId)) {
+                Log.d("HeinDxxx", "setDataCallBackSuccess: $it")
+
                 it.isPurchase = true
                 it.purchaseTime = purchase.purchaseTime
-                it.purchaseToken = purchase.purchaseToken
+                it.purchaseToken =  purchase.purchaseToken
                 if (isSubscriptions) {
                     subscribeInterface.iterator().forEach { subscribe ->
                         subscribe.subscribeSuccess(it)
@@ -275,7 +314,7 @@ object IapConnector {
         }
     }
 
-    fun getAllProductModel(): List<ProductModel> {
+    fun getAllProductModel(): List<IapModel> {
         return listProductModel
     }
 }
