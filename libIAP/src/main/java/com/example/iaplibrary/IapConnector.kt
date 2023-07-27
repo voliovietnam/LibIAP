@@ -42,9 +42,9 @@ object IapConnector {
                     CoroutineScope(Dispatchers.IO).launch {
                         val promise = async {
                             for (purchase in purchases) {
-                                val job = CoroutineScope(Dispatchers.IO).async {
+                             //   val job = CoroutineScope(Dispatchers.IO).async {
                                     handlePurchase(purchase, true)
-                                }
+                             //   }
                             }
                         }
                         promise.await()
@@ -79,9 +79,9 @@ object IapConnector {
             CoroutineScope(Dispatchers.IO).launch {
                 val promise = async {
                     for (purchase in it) {
-                        val job = CoroutineScope(Dispatchers.IO).async {
+                      //  val job = CoroutineScope(Dispatchers.IO).async {
                             handlePurchase(purchase, true)
-                        }
+                     //   }
                     }
                 }
                 promise.await()
@@ -104,9 +104,9 @@ object IapConnector {
             CoroutineScope(Dispatchers.IO).launch {
                 val promise = async {
                     for (purchase in it) {
-                        val job = CoroutineScope(Dispatchers.IO).async {
+                       // val job = CoroutineScope(Dispatchers.IO).async {
                             handlePurchase(purchase, true)
-                        }
+                       // }
                     }
                 }
                 promise.await()
