@@ -291,6 +291,10 @@ object IapConnector {
                 if (isSubscriptions) {
                     subscribeInterface.iterator().forEach { subscribe ->
                         subscribe.subscribeSuccess(it)
+
+                        val oldListPurchased = listPurchased.value?.toMutableList() ?: mutableListOf()
+                        oldListPurchased.add(it)
+                        listPurchased.postValue(oldListPurchased)
                     }
                 }
             }
