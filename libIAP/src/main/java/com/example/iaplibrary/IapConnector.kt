@@ -6,10 +6,15 @@ import android.util.Log
 import android.widget.Toast
 import androidx.lifecycle.MutableLiveData
 import com.android.billingclient.api.*
+import com.example.iaplibrary.model.IapData
 import com.example.iaplibrary.model.IapIdModel
 import com.example.iaplibrary.model.IapModel
 import com.example.iaplibrary.model.IapModel.Companion.convertDataToProductPremium
+import com.example.iaplibrary.model.InAppModel
+import com.example.iaplibrary.model.SubModel
+import com.example.iaplibrary.model.TypeSub
 import kotlinx.coroutines.*
+import java.lang.Exception
 import java.util.concurrent.CopyOnWriteArrayList
 
 object IapConnector {
@@ -42,20 +47,20 @@ object IapConnector {
                     CoroutineScope(Dispatchers.IO).launch {
                         val promise = async {
                             for (purchase in purchases) {
-                             //   val job = CoroutineScope(Dispatchers.IO).async {
-                                    handlePurchase(purchase, true)
-                             //   }
+                                //   val job = CoroutineScope(Dispatchers.IO).async {
+                                handlePurchase(purchase, true)
+                                //   }
                             }
                         }
                         promise.await()
-                        val data= mutableListOf<IapModel>()
+                        val data = mutableListOf<IapModel>()
                         listProductModel.iterator().forEach {
-                            if(it.isPurchase){
+                            if (it.isPurchase) {
                                 data.add(it)
                             }
                         }
                         listPurchased.postValue(data)
-                      //  val data= listProductModel.iterator().forEach {  }
+                        //  val data= listProductModel.iterator().forEach {  }
                     }
                 } else {
                     subscribeInterface.iterator().forEach { subscribe ->
@@ -79,9 +84,9 @@ object IapConnector {
             CoroutineScope(Dispatchers.IO).launch {
                 val promise = async {
                     for (purchase in it) {
-                      //  val job = CoroutineScope(Dispatchers.IO).async {
-                            handlePurchase(purchase, true)
-                     //   }
+                        //  val job = CoroutineScope(Dispatchers.IO).async {
+                        handlePurchase(purchase, true)
+                        //   }
                     }
                 }
                 promise.await()
@@ -104,9 +109,9 @@ object IapConnector {
             CoroutineScope(Dispatchers.IO).launch {
                 val promise = async {
                     for (purchase in it) {
-                       // val job = CoroutineScope(Dispatchers.IO).async {
-                            handlePurchase(purchase, true)
-                       // }
+                        // val job = CoroutineScope(Dispatchers.IO).async {
+                        handlePurchase(purchase, true)
+                        // }
                     }
                 }
                 promise.await()
@@ -162,9 +167,7 @@ object IapConnector {
     }
 
     fun buyIap(
-        activity: Activity,
-        productId: String,
-        idToken: String
+        activity: Activity, productId: String, idToken: String
     ) {
         productDetailsList.iterator().forEach { productDetails ->
             if (productDetails.productId == productId) {
@@ -175,20 +178,19 @@ object IapConnector {
                     billingFlowParam.setOfferToken(idToken)
                 }
 
-                val productDetailsParamsList =
-                    listOf(billingFlowParam.build())
+                val productDetailsParamsList = listOf(billingFlowParam.build())
 
-                val billingFlowParams =
-                    BillingFlowParams.newBuilder()
-                        .setProductDetailsParamsList(productDetailsParamsList)
-                        .build()
+                val billingFlowParams = BillingFlowParams.newBuilder()
+                    .setProductDetailsParamsList(productDetailsParamsList).build()
 
                 billingClient?.launchBillingFlow(activity, billingFlowParams)
             }
         }
     }
 
-    fun buyIapUpgrade(activity: Activity, productId: String, productIdOlder: String,   idToken: String) {
+    fun buyIapUpgrade(
+        activity: Activity, productId: String, productIdOlder: String, idToken: String
+    ) {
         productDetailsList.iterator().forEach { productDetails ->
             if (productDetails.productId == productId) {
                 val billingFlowParam = BillingFlowParams.ProductDetailsParams.newBuilder()
@@ -200,12 +202,10 @@ object IapConnector {
                     )
                 }
 
-                val productDetailsParamsList =
-                    listOf(billingFlowParam.build())
+                val productDetailsParamsList = listOf(billingFlowParam.build())
 
-                val billingFlowParams =
-                    BillingFlowParams.newBuilder()
-                        .setProductDetailsParamsList(productDetailsParamsList)
+                val billingFlowParams = BillingFlowParams.newBuilder()
+                    .setProductDetailsParamsList(productDetailsParamsList)
 
                 var purchaseToken: String? = null
 
@@ -269,7 +269,7 @@ object IapConnector {
 
     private fun setDataCallBackSuccess(purchase: Purchase, isSubscriptions: Boolean) {
         jobCountTimeConnectIap?.cancel()
-       // isPurchasesIap.postValue(true)
+        // isPurchasesIap.postValue(true)
 
         productModelOlder?.let { pro ->
             listProductModel.iterator().forEach {
@@ -287,10 +287,15 @@ object IapConnector {
 
                 it.isPurchase = true
                 it.purchaseTime = purchase.purchaseTime
-                it.purchaseToken =  purchase.purchaseToken
+                it.purchaseToken = purchase.purchaseToken
                 if (isSubscriptions) {
                     subscribeInterface.iterator().forEach { subscribe ->
                         subscribe.subscribeSuccess(it)
+
+                        val oldListPurchased =
+                            listPurchased.value?.toMutableList() ?: mutableListOf()
+                        oldListPurchased.add(it)
+                        listPurchased.postValue(oldListPurchased)
                     }
                 }
             }
@@ -317,4 +322,151 @@ object IapConnector {
     fun getAllProductModel(): List<IapModel> {
         return listProductModel
     }
+
+    fun inAppInformation(productId: String): InAppModel? {
+        listProductModel.find { it.productId == productId && it.type == INAPP }?.let {
+            it.inAppDetails?.let {
+                return it
+            }
+        }
+        return null
+    }
+
+    fun subSaleInformation(productId: String): SubModel? {
+        listProductModel.find { it.productId == productId && it.type == SUBS }?.let {
+            it.subscriptionDetails?.find { it.typeSub == TypeSub.Sale }?.let {
+                return it
+            }
+        }
+        return null
+    }
+
+    fun subTrailInformation(productId: String): SubModel? {
+        listProductModel.find { it.productId == productId && it.type == SUBS }?.let {
+            it.subscriptionDetails?.find { it.typeSub == TypeSub.Trail }?.let {
+                return it
+            }
+        }
+        return null
+    }
+
+    fun subBaseInformation(productId: String): SubModel? {
+        listProductModel.find { it.productId == productId && it.type == SUBS }?.let {
+            it.subscriptionDetails?.find { it.typeSub == TypeSub.Base }?.let {
+                return it
+            }
+        }
+        return null
+    }
+
+    fun subInformation(productId: String, typeSub: TypeSub): SubModel? {
+        listProductModel.find { it.productId == productId && it.type == SUBS }?.let {
+            it.subscriptionDetails?.find { it.typeSub == typeSub }?.let {
+                return it
+            }
+        }
+        return null
+    }
+
+    fun listSubInformation(productId: String): List<SubModel> {
+        val listSub = mutableListOf<SubModel>()
+        subTrailInformation(productId)?.let {
+            listSub.add(it)
+        }
+        subSaleInformation(productId)?.let {
+            listSub.add(it)
+        }
+        subBaseInformation(productId)?.let {
+            listSub.add(it)
+        }
+        return listSub
+    }
+
+    fun iapInformation(productId: String): List<IapData> {
+        val listIap = mutableListOf<IapData>()
+        when (typeIap(productId)) {
+            INAPP -> {
+                inAppInformation(productId)?.let {
+                    listIap.add(it)
+                }
+            }
+
+            SUBS -> {
+                listIap.addAll(listSubInformation(productId))
+            }
+
+            else -> {
+
+            }
+        }
+        return listIap
+    }
+
+    fun typeIap(productId: String): String? {
+        listProductModel.find { it.productId == productId }?.let {
+            return it.type
+        }
+        return null
+    }
+
+    fun percentSale(productId: String): Int {
+        return if (typeIap(productId) == SUBS) {
+            try {
+                val base = subBaseInformation(productId)?.let {
+                    it.priceAmountMicros
+                } ?: 0
+                val sale = subSaleInformation(productId)?.let {
+                    it.priceAmountMicros
+                } ?: 0
+
+                (sale * 100 / base).toInt()
+
+            } catch (e: Exception) {
+                0
+            }
+
+        } else {
+            0
+        }
+    }
+
+    fun buyIap(
+        activity: Activity,
+        productId: String,
+        typeSub: TypeSub = TypeSub.Base,
+    ) {
+        val token = when (typeIap(productId)) {
+            INAPP -> {
+                "INAPP"
+            }
+
+            SUBS -> {
+                val tokenBase = subBaseInformation(productId)?.offerIdToken ?: ""
+                when (typeSub) {
+                    TypeSub.Trail -> {
+                        subTrailInformation(productId)?.offerIdToken ?: tokenBase
+                    }
+
+                    TypeSub.Sale -> {
+                        subSaleInformation(productId)?.offerIdToken ?: tokenBase
+                    }
+
+                    else -> {
+                        subBaseInformation(productId)?.offerIdToken
+                    }
+                }
+            }
+
+            else -> {
+                null
+            }
+        }
+
+        token?.let {
+            buyIap(activity, productId, it)
+        }
+    }
+
+    const val INAPP = "inapp"
+    const val SUBS = "subs"
 }

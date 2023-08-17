@@ -3,11 +3,9 @@ package com.example.iaplibrary.model
 import com.android.billingclient.api.ProductDetails
 
 data class IapModel(
-    val name: String,
-    val productId: String,
-    val title: String,
     val type: String,
-    val subscriptionDetails: List<SubscriptionOfferDetails>?,
+    val productId: String,
+    val subscriptionDetails: List<SubModel>?,
     val inAppDetails: InAppModel? = null,
 
     var isPurchase: Boolean = false,
@@ -15,47 +13,70 @@ data class IapModel(
     var purchaseToken: String = "",
 ) {
     companion object {
+
         fun convertDataToProductPremium(listData: List<ProductDetails>): List<IapModel> {
             val listProduct = mutableListOf<IapModel>()
 
-            listData.forEach {
-                val listDetail = mutableListOf<SubscriptionOfferDetails>()
-                it.subscriptionOfferDetails?.forEach {
-                    val pricingPhases = mutableListOf<PricingPhases>()
+            listData.forEach { product ->
+                val listDetail = mutableListOf<SubModel>()
+                product.subscriptionOfferDetails?.forEach {
+                    var pricingPhases: PricingPhases? = null
+                    var typeSub: TypeSub = TypeSub.Base
+
                     it.pricingPhases.pricingPhaseList.forEach {
-                        pricingPhases.add(
-                            PricingPhases(
-                                formattedPrice = it.formattedPrice,
-                                priceCurrencyCode = it.priceCurrencyCode,
-                                priceAmountMicros = it.priceAmountMicros,
-                                billingPeriod = it.billingPeriod,
-                            )
+                        val check = PricingPhases(
+                            formattedPrice = it.formattedPrice,
+                            priceCurrencyCode = it.priceCurrencyCode,
+                            priceAmountMicros = it.priceAmountMicros,
+                            billingPeriod = it.billingPeriod,
                         )
+
+                        pricingPhases?.let {
+                            if (it.priceAmountMicros != 0L) {
+                                if (it.priceAmountMicros > check.priceAmountMicros) {
+                                    pricingPhases = check
+                                }
+                                typeSub = TypeSub.Sale
+                            }
+                        } ?: kotlin.run {
+                            pricingPhases = check
+                            typeSub = when (check.priceAmountMicros) {
+                                0L -> {
+                                    TypeSub.Trail
+                                }
+
+                                else -> TypeSub.Base
+                            }
+                        }
                     }
 
-
                     listDetail.add(
-                        SubscriptionOfferDetails(
+                        SubModel(
+                            name = product.name,
+                            productId = product.productId,
+                            title = product.title,
+                            formattedPrice = pricingPhases!!.formattedPrice,
+                            priceAmountMicros = pricingPhases!!.priceAmountMicros,
+                            priceCurrencyCode = pricingPhases!!.priceCurrencyCode,
                             offerIdToken = it.offerToken,
-                            offerId = it.offerId ?: "",
-                            offerTags = if (it.offerTags.isNotEmpty()) it.offerTags.first() else "",
-                            pricingPhases = pricingPhases
+                            typeSub = typeSub,
                         )
                     )
                 }
                 var inApp: InAppModel? = null
-                it.oneTimePurchaseOfferDetails?.let {
+                product.oneTimePurchaseOfferDetails?.let {
                     inApp = InAppModel(
+                        name = product.name,
+                        productId = product.productId,
+                        title = product.title,
                         formattedPrice = it.formattedPrice,
                         priceAmountMicros = it.priceAmountMicros,
                         priceCurrencyCode = it.priceCurrencyCode,
                     )
                 }
                 val data = IapModel(
-                    name = it.name,
-                    productId = it.productId,
-                    title = it.title,
-                    type = it.productType,
+                    productId = product.productId,
+                    type = product.productType,
                     subscriptionDetails = listDetail,
                     inAppDetails = inApp,
                 )
