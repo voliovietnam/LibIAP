@@ -1,6 +1,6 @@
 ### implementation
 ```xml
-implementation 'com.github.voliovietnam:LibIAP:1.1.4v2'
+implementation 'com.github.voliovietnam:LibIAP:1.1.4v3'
 ```
 
 ### Init
