@@ -16,7 +16,6 @@ class InApp constructor(
     override suspend fun getInformation(listID: List<IapIdModel>) =
         withContext(Dispatchers.Default) {
             getPriceSubscribeIap(listID)
-            checkSubscribeIap()
         }
 
     override fun checkSubscribeIap() {
@@ -48,6 +47,7 @@ class InApp constructor(
 
         val productDetailsResultAsync = billingClient?.queryProductDetailsAsync(params.build()) { p0, p1 ->
             informationProduct(p1)
+            checkSubscribeIap()
         }
     }
 

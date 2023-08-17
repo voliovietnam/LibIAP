@@ -16,7 +16,6 @@ class Subs constructor(
     override suspend fun getInformation(listID: List<IapIdModel>) =
         withContext(Dispatchers.Default) {
             getPriceSubscribeIap(listID)
-            checkSubscribeIap()
         }
 
     override fun checkSubscribeIap() {
@@ -47,6 +46,7 @@ class Subs constructor(
         val productDetailsResult = billingClient?.queryProductDetails(params.build())
         productDetailsResult?.productDetailsList?.let {
             informationProduct(it)
+            checkSubscribeIap()
         }
     }
 

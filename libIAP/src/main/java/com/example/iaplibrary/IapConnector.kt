@@ -79,6 +79,7 @@ object IapConnector {
         inApp = InApp(billingClient, informationProduct = {
             productDetailsList.addAll(it)
             listProductModel.addAll(convertDataToProductPremium(it))
+            Log.d("Naxxxxx97", "MMMMMM")
         }, subscribeIap = {
 
             CoroutineScope(Dispatchers.IO).launch {
@@ -86,6 +87,7 @@ object IapConnector {
                     for (purchase in it) {
                         //  val job = CoroutineScope(Dispatchers.IO).async {
                         handlePurchase(purchase, false)
+                        Log.d("Naxxxxx97", "initIap:")
                         //   }
                     }
                 }
@@ -96,6 +98,7 @@ object IapConnector {
                         data.add(it)
                     }
                 }
+                Log.d("Naxxxxx97", "initIap: ${data.size}")
                 listPurchased.postValue(data)
             }
 
@@ -232,6 +235,7 @@ object IapConnector {
 
     private fun handlePurchase(purchase: Purchase, isSubscriptions: Boolean) {
         if (!purchase.isAcknowledged) {
+            Log.d("Naxxxxx97", "No isAcknowledged:")
             val acknowledgePurchaseParams =
                 AcknowledgePurchaseParams.newBuilder().setPurchaseToken(purchase.purchaseToken)
             CoroutineScope(Dispatchers.Default).launch() {
@@ -248,6 +252,7 @@ object IapConnector {
                 }
             }
         } else {
+            Log.d("Naxxxxx97", "isAcknowledged:")
             setDataCallBackSuccess(purchase, isSubscriptions)
         }
     }
@@ -282,6 +287,7 @@ object IapConnector {
         }
 
         listProductModel.iterator().forEach {
+            Log.d("Naxxxxx97", "setDataCallBackSuccess:")
             if (purchase.products.contains(it.productId)) {
                 Log.d("HeinDxxx", "setDataCallBackSuccess: $it")
 
@@ -295,6 +301,7 @@ object IapConnector {
                         val oldListPurchased =
                             listPurchased.value?.toMutableList() ?: mutableListOf()
                         oldListPurchased.add(it)
+                        Log.d("Naxxxxx97", "setDataCallBackSuccess: ${oldListPurchased.size}")
                         listPurchased.postValue(oldListPurchased)
                     }
                 }
