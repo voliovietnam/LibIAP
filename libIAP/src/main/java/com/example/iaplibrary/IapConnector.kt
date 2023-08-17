@@ -85,7 +85,7 @@ object IapConnector {
                 val promise = async {
                     for (purchase in it) {
                         //  val job = CoroutineScope(Dispatchers.IO).async {
-                        handlePurchase(purchase, true)
+                        handlePurchase(purchase, false)
                         //   }
                     }
                 }
