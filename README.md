@@ -23,25 +23,76 @@ File: iap_id.json
 
 ### CheckPurchasesIap
  ```xml
-IapConnector.isPurchasesIap.observe(viewLifecycleOwner) {
+IapConnector.listPurchased.observe(viewLifecycleOwner) {
            it?.let {
-               if(it){
-                   // DA MUA IAP
-               } else{
-                   // CHUA MUA IAP
-               }
-           }
+                CoroutineScope(Dispatchers.Main).launch {
+                    if (it.isNotEmpty()) {
+                      //da mua
+                    } else {
+                        //chua mua
+                    }
+                }
+            }
        }
 ```
 
 ### Buy
  ```xml
-IapConnector.buyIap(activity,"iapforever")
+   IapConnector.buyIap(
+        activity: Activity,
+        productId: String,
+        typeSub: TypeSub = TypeSub.Base,
+    ) 
 ```
 
 ### BuyUpgrade
  ```xml
 IapConnector.buyIapUpgrade(activity: Activity, productId: String, productIdOlder: String)
+```
+
+### PercentSale
+ ```xml
+ IapConnector.percentSale(productId: String)
+```
+
+### TypeIap
+ ```xml
+ IapConnector.typeIap(productId: String)
+```
+
+### IapInformation
+ ```xml
+ IapConnector.iapInformation(productId: String)
+```
+
+### ListSubInformation
+ ```xml
+ IapConnector.listSubInformation(productId: String)
+```
+
+### SubInformation
+ ```xml
+ IapConnector.subInformation(productId: String, typeSub: TypeSub)
+```
+
+### SubSaleInformation
+ ```xml
+ IapConnector.subSaleInformation(productId: String)
+```
+
+### SubTrailInformation
+ ```xml
+ IapConnector.subTrailInformation(productId: String)
+```
+
+### SubBaseInformation
+ ```xml
+ IapConnector.subBaseInformation(productId: String)
+```
+
+### InAppInformation
+ ```xml
+ IapConnector.inAppInformation(productId: String)
 ```
 
 ### Reset Iap
