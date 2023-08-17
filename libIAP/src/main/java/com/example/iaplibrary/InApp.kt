@@ -1,5 +1,6 @@
 package com.example.iaplibrary
 
+import android.util.Log
 import com.android.billingclient.api.*
 import com.example.iaplibrary.model.IapIdModel
 import kotlinx.coroutines.CoroutineScope
@@ -16,6 +17,7 @@ class InApp constructor(
     override suspend fun getInformation(listID: List<IapIdModel>) =
         withContext(Dispatchers.Default) {
             getPriceSubscribeIap(listID)
+            checkSubscribeIap()
         }
 
     override fun checkSubscribeIap() {
@@ -44,10 +46,8 @@ class InApp constructor(
         params.setProductList(productList)
 
         val productDetailsResult = billingClient?.queryProductDetails(params.build())
-
-        val productDetailsResultAsync = billingClient?.queryProductDetailsAsync(params.build()) { p0, p1 ->
-            informationProduct(p1)
-            checkSubscribeIap()
+        productDetailsResult?.productDetailsList?.let {
+            informationProduct(it)
         }
     }
 

@@ -16,13 +16,12 @@ class Subs constructor(
     override suspend fun getInformation(listID: List<IapIdModel>) =
         withContext(Dispatchers.Default) {
             getPriceSubscribeIap(listID)
+            checkSubscribeIap()
         }
 
     override fun checkSubscribeIap() {
         billingClient?.queryPurchasesAsync(
-            QueryPurchasesParams.newBuilder()
-                .setProductType(BillingClient.ProductType.SUBS)
-                .build()
+            QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.SUBS).build()
         ) { billingResult, purchases ->
             if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && purchases.isNotEmpty()) {
                 subscribeIap(purchases)
@@ -46,23 +45,18 @@ class Subs constructor(
         val productDetailsResult = billingClient?.queryProductDetails(params.build())
         productDetailsResult?.productDetailsList?.let {
             informationProduct(it)
-            checkSubscribeIap()
         }
     }
 
     override fun unSubscribeIap() {
         billingClient?.queryPurchasesAsync(
-            QueryPurchasesParams.newBuilder()
-                .setProductType(BillingClient.ProductType.SUBS)
-                .build()
+            QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.SUBS).build()
         ) { billingResult, purchases ->
             if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && purchases.isNotEmpty()) {
                 purchases.forEach {
                     CoroutineScope(Dispatchers.IO).launch {
                         val consumeParams =
-                            ConsumeParams.newBuilder()
-                                .setPurchaseToken(it.purchaseToken)
-                                .build()
+                            ConsumeParams.newBuilder().setPurchaseToken(it.purchaseToken).build()
 
                         withContext(Dispatchers.IO) {
                             billingClient.consumeAsync(consumeParams) { billingResult, s ->
