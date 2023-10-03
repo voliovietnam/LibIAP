@@ -90,8 +90,10 @@ object IapConnector {
         }
 
         inApp = InApp(billingClient, informationProduct = {
+            SaveDataIap.saveDataIapModel(data = mutableListOf())
             productDetailsList.addAll(it)
             listProductModel.addAll(convertDataToProductPremium(it))
+
         }, subscribeIap = {
 
             CoroutineScope(Dispatchers.IO).launch {
@@ -114,6 +116,7 @@ object IapConnector {
         })
 
         subs = Subs(billingClient, informationProduct = {
+            SaveDataIap.saveDataIapModel(data = mutableListOf())
             productDetailsList.addAll(it)
             listProductModel.addAll(convertDataToProductPremium(it))
         }, subscribeIap = {
