@@ -13,6 +13,7 @@ import com.example.iaplibrary.model.IapModel.Companion.convertDataToProductPremi
 import com.example.iaplibrary.model.InAppModel
 import com.example.iaplibrary.model.SubModel
 import com.example.iaplibrary.model.TypeSub
+import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.*
 import java.lang.Exception
 import java.util.concurrent.CopyOnWriteArrayList
@@ -32,15 +33,26 @@ object IapConnector {
     private var inApp: InApp? = null
     private var subs: Subs? = null
     private var isDebug: Boolean? = null
+    private var timeDelay: Long = 3000
+
 
     val listPurchased = MutableLiveData<List<IapModel>?>(null)
 
     private val subscribeInterface = CopyOnWriteArrayList<SubscribeInterface>()
 
-    fun initIap(application: Application, pathJson: String, isDebug: Boolean? = null) {
+    fun initIap(
+        application: Application,
+        pathJson: String,
+        timeDelay: Long = 3000,
+        isDebug: Boolean? = null
+    ) {
 
+        this.timeDelay = timeDelay
         this.pathJson = pathJson
         this.isDebug = isDebug
+
+        MMKV.initialize(application)
+
         billingClient =
             BillingClient.newBuilder(application).setListener { billingResult, purchases ->
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && purchases != null) {
@@ -60,6 +72,7 @@ object IapConnector {
                             }
                         }
                         listPurchased.postValue(data)
+                        SaveDataIap.saveDataIapModel(data)
                         //  val data= listProductModel.iterator().forEach {  }
                     }
                 } else {
@@ -72,8 +85,8 @@ object IapConnector {
         listID.addAll(IapIdModel.getDataInput(application, pathJson))
 
         jobCountTimeConnectIap = CoroutineScope(Dispatchers.IO).launch {
-            delay(3_000)
-            listPurchased.postValue(emptyList())
+            delay(timeDelay)
+            listPurchased.postValue(SaveDataIap.getDataIapModel())
         }
 
         inApp = InApp(billingClient, informationProduct = {
@@ -95,6 +108,7 @@ object IapConnector {
                     }
                 }
                 listPurchased.postValue(data)
+                SaveDataIap.saveDataIapModel(data)
             }
 
         })
@@ -120,6 +134,7 @@ object IapConnector {
                     }
                 }
                 listPurchased.postValue(data)
+                SaveDataIap.saveDataIapModel(data)
             }
         })
 
@@ -292,6 +307,7 @@ object IapConnector {
                             listPurchased.value?.toMutableList() ?: mutableListOf()
                         oldListPurchased.add(it)
                         listPurchased.postValue(oldListPurchased)
+                        SaveDataIap.saveDataIapModel(oldListPurchased)
                     }
                 }
             }

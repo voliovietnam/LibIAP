@@ -1,7 +1,10 @@
 package com.example.iaplibrary.model
 
+import android.os.Parcelable
 import com.android.billingclient.api.ProductDetails
+import kotlinx.android.parcel.Parcelize
 
+@Parcelize
 data class IapModel(
     val type: String,
     val productId: String,
@@ -11,7 +14,7 @@ data class IapModel(
     var isPurchase: Boolean = false,
     var purchaseTime: Long = 0L,
     var purchaseToken: String = "",
-) {
+) : Parcelable {
     companion object {
 
         fun convertDataToProductPremium(listData: List<ProductDetails>): List<IapModel> {

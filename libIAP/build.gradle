@@ -2,6 +2,7 @@ plugins {
     id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
     id 'maven-publish'
+    id 'kotlin-parcelize'
 }
 
 android {
@@ -42,6 +43,9 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-extensions:$lifecycle_version_2"
     implementation "androidx.lifecycle:lifecycle-runtime:$lifecycle_version_2"
     annotationProcessor "androidx.lifecycle:lifecycle-compiler:$lifecycle_version_2"
+
+    // Key-Value storage framework
+    implementation 'com.tencent:mmkv:1.2.13'
 }
 
 afterEvaluate {

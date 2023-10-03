@@ -1,4 +1,6 @@
 package com.example.iaplibrary.model
 
-interface IapData {
+import android.os.Parcelable
+
+interface IapData: Parcelable {
 }
