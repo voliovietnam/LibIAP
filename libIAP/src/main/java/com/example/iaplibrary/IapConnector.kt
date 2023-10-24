@@ -35,16 +35,17 @@ object IapConnector {
     private var isDebug: Boolean? = null
     private var timeDelay: Long = 3000
 
+    private var typeIap = 0
+    // 1 type thif la 1
+    // 2 type thif la 2
+
 
     val listPurchased = MutableLiveData<List<IapModel>?>(null)
 
     private val subscribeInterface = CopyOnWriteArrayList<SubscribeInterface>()
 
     fun initIap(
-        application: Application,
-        pathJson: String,
-        timeDelay: Long = 3000,
-        isDebug: Boolean? = null
+        application: Application, pathJson: String, timeDelay: Long = 3000, isDebug: Boolean? = null
     ) {
 
         this.timeDelay = timeDelay
@@ -85,6 +86,13 @@ object IapConnector {
 
         listID.addAll(IapIdModel.getDataInput(application, pathJson))
 
+        listID.find { it.type == "subs" }?.let {
+            typeIap++
+        }
+        listID.find { it.type == "inapp" }?.let {
+            typeIap++
+        }
+
         jobCountTimeConnectIap = CoroutineScope(Dispatchers.IO).launch {
             delay(timeDelay)
             listPurchased.postValue(SaveDataIap.getDataIapModel())
@@ -110,7 +118,11 @@ object IapConnector {
                         data.add(it)
                     }
                 }
-                listPurchased.postValue(data)
+
+                typeIap--
+                if (typeIap == 0) {
+                    listPurchased.postValue(data)
+                }
                 SaveDataIap.saveDataIapModel(data)
             }
 
@@ -137,7 +149,10 @@ object IapConnector {
                         data.add(it)
                     }
                 }
-                listPurchased.postValue(data)
+                typeIap--
+                if (typeIap == 0) {
+                    listPurchased.postValue(data)
+                }
                 SaveDataIap.saveDataIapModel(data)
             }
         })
@@ -309,8 +324,7 @@ object IapConnector {
                     }
                 }
 
-                val oldListPurchased =
-                    listPurchased.value?.toMutableList() ?: mutableListOf()
+                val oldListPurchased = listPurchased.value?.toMutableList() ?: mutableListOf()
                 oldListPurchased.add(it)
                 listPurchased.postValue(oldListPurchased)
                 SaveDataIap.saveDataIapModel(oldListPurchased)
