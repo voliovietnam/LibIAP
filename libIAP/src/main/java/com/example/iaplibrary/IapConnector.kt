@@ -35,11 +35,6 @@ object IapConnector {
     private var isDebug: Boolean? = null
     private var timeDelay: Long = 3000
 
-    private var typeIap = 0
-    // 1 type thif la 1
-    // 2 type thif la 2
-
-
     val listPurchased = MutableLiveData<List<IapModel>?>(null)
 
     private val subscribeInterface = CopyOnWriteArrayList<SubscribeInterface>()
@@ -86,13 +81,6 @@ object IapConnector {
 
         listID.addAll(IapIdModel.getDataInput(application, pathJson))
 
-        listID.find { it.type == "subs" }?.let {
-            typeIap++
-        }
-        listID.find { it.type == "inapp" }?.let {
-            typeIap++
-        }
-
         jobCountTimeConnectIap = CoroutineScope(Dispatchers.IO).launch {
             delay(timeDelay)
             listPurchased.postValue(SaveDataIap.getDataIapModel())
@@ -118,11 +106,7 @@ object IapConnector {
                         data.add(it)
                     }
                 }
-
-                typeIap--
-                if (typeIap == 0) {
-                    listPurchased.postValue(data)
-                }
+                listPurchased.postValue(data)
                 SaveDataIap.saveDataIapModel(data)
             }
 
@@ -137,9 +121,7 @@ object IapConnector {
             CoroutineScope(Dispatchers.IO).launch {
                 val promise = async {
                     for (purchase in it) {
-                        // val job = CoroutineScope(Dispatchers.IO).async {
                         handlePurchase(purchase, false)
-                        // }
                     }
                 }
                 promise.await()
@@ -149,10 +131,7 @@ object IapConnector {
                         data.add(it)
                     }
                 }
-                typeIap--
-                if (typeIap == 0) {
-                    listPurchased.postValue(data)
-                }
+                listPurchased.postValue(data)
                 SaveDataIap.saveDataIapModel(data)
             }
         })
@@ -262,20 +241,17 @@ object IapConnector {
         }
     }
 
-    private fun handlePurchase(purchase: Purchase, isSubscriptions: Boolean) {
+    private suspend fun handlePurchase(purchase: Purchase, isSubscriptions: Boolean) {
         if (!purchase.isAcknowledged) {
             val acknowledgePurchaseParams =
                 AcknowledgePurchaseParams.newBuilder().setPurchaseToken(purchase.purchaseToken)
-            CoroutineScope(Dispatchers.Default).launch() {
-                withContext(Dispatchers.IO) {
-                    billingClient?.acknowledgePurchase(acknowledgePurchaseParams.build()) { p0 ->
-                        if (p0.responseCode == BillingClient.BillingResponseCode.OK) {
-                            setDataCallBackSuccess(purchase, isSubscriptions)
-                        } else {
-                            subscribeInterface.iterator().forEach { subscribe ->
-                                subscribe.subscribeError(logEventFailed(p0.responseCode))
-                            }
-                        }
+
+            billingClient?.acknowledgePurchase(acknowledgePurchaseParams.build())?.let {p0->
+                if (p0.responseCode == BillingClient.BillingResponseCode.OK) {
+                    setDataCallBackSuccess(purchase, isSubscriptions)
+                } else {
+                    subscribeInterface.iterator().forEach { subscribe ->
+                        subscribe.subscribeError(logEventFailed(p0.responseCode))
                     }
                 }
             }
@@ -321,13 +297,13 @@ object IapConnector {
                 if (isSubscriptions) {
                     subscribeInterface.iterator().forEach { subscribe ->
                         subscribe.subscribeSuccess(it)
+                        val oldListPurchased =
+                            listPurchased.value?.toMutableList() ?: mutableListOf()
+                        oldListPurchased.add(it)
+                        listPurchased.postValue(oldListPurchased)
+                        SaveDataIap.saveDataIapModel(oldListPurchased)
                     }
                 }
-
-                val oldListPurchased = listPurchased.value?.toMutableList() ?: mutableListOf()
-                oldListPurchased.add(it)
-                listPurchased.postValue(oldListPurchased)
-                SaveDataIap.saveDataIapModel(oldListPurchased)
             }
         }
     }
